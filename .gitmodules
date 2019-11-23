@@ -1,0 +1,3 @@
+[submodule "src/native/simplex"]
+	path = src/native/simplex
+	url = git@github.com:jeronimonunes/simplex.git
