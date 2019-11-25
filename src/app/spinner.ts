@@ -1,4 +1,4 @@
-export const images = [];
+export const images: string[] = [];
 
 for (let initialOpacity = 10; initialOpacity >= 0; initialOpacity--) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -25,6 +25,7 @@ for (let initialOpacity = 10; initialOpacity >= 0; initialOpacity--) {
   }
   images.push(URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' })));
 }
+
 export function getSpinnerImageOnTime(miliseconds: number) {
   return images[Math.round(miliseconds / 100) % 10];
 }

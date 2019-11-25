@@ -7,7 +7,20 @@
   grid-template-areas:
     "header        header"
     "instructions  graph"
-    "editor        graph";
+    "editor        graph"
+    "error         graph";
+}
+
+.error {
+  grid-area: error;
+  margin: 1em;
+  color: #d80418;
+  background-color: #ffd1d6;
+  position: relative;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  border: 3px solid #6f2121;
+  border-radius: 0.4rem;
 }
 
 #instructions {

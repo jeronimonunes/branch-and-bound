@@ -1,7 +1,7 @@
 #include <emscripten/bind.h>
 #include <algorithm>
-#include "simplex/src/Tabloid.hh"
-#include "simplex/src/Simplex.hh"
+#include "./simplex/src/Tabloid.hh"
+#include "./simplex/src/Simplex.hh"
 
 Vector jsFractionArrayToVector(emscripten::val b)
 {
@@ -24,35 +24,6 @@ Matrix jsFractionArrayArrayToMatrix(emscripten::val b)
   return m;
 }
 
-emscripten::val matrixToJs(const Matrix &matrix)
-{
-  emscripten::val matrixJs = emscripten::val::array();
-  for (const auto &line : matrix)
-  {
-    matrixJs.call<void>("push", emscripten::val::array(line));
-  }
-  return matrixJs;
-}
-
-emscripten::val tabloidToJs(const Tabloid &tabloid, std::string name)
-{
-  emscripten::val tabloidJs = emscripten::val::object();
-  tabloidJs.set("certificate", emscripten::val::array(tabloid.certificate));
-  tabloidJs.set("certificateMatrix", matrixToJs(tabloid.certificateMatrix));
-  tabloidJs.set("A", matrixToJs(tabloid.A));
-  tabloidJs.set("B", emscripten::val::array(tabloid.B));
-  tabloidJs.set("C", emscripten::val::array(tabloid.C));
-  tabloidJs.set("v", emscripten::val(tabloid.v));
-  emscripten::val baseJs = emscripten::val::object();
-  for (const auto &[x, y] : tabloid.base)
-  {
-    baseJs.set(y, x);
-  }
-  tabloidJs.set("base", baseJs);
-  tabloidJs.set("name", name);
-  return tabloidJs;
-}
-
 emscripten::val resultToJs(const Result &result)
 {
   emscripten::val answear = emscripten::val::object();
@@ -67,8 +38,8 @@ emscripten::val resultToJs(const Result &result)
   case ResultType::LIMITED:
     answear.set("type", "LIMITED");
     break;
-  case ResultType::UNFEASIBLE:
-    answear.set("type", "UNFEASIBLE");
+  case ResultType::INFEASIBLE:
+    answear.set("type", "INFEASIBLE");
     break;
   }
   return answear;
@@ -76,57 +47,44 @@ emscripten::val resultToJs(const Result &result)
 
 emscripten::val simplex(emscripten::val a, emscripten::val b, emscripten::val c)
 {
-  emscripten::val steps = emscripten::val::array();
-  emscripten::val res = emscripten::val::object();
   Matrix A = jsFractionArrayArrayToMatrix(a);
   Vector B = jsFractionArrayToVector(b);
   Vector C = jsFractionArrayToVector(c);
   Tabloid tabloid(A, B, C);
-  steps.call<void>("push", tabloidToJs(tabloid, "First Tabloid"));
   auto itr = std::find_if(B.begin(), B.end(), [](const auto &val) {
     return val.isNegative();
   });
   if (itr != B.end())
   {
     tabloid = tabloid.fixNegativeB();
-    steps.call<void>("push", tabloidToJs(tabloid, "Fixed negative B"));
   }
   Tabloid auxiliar = tabloid.makeAuxiliarSimplex();
-  int step = 0;
-  steps.call<void>("push", tabloidToJs(auxiliar, "Auxiliar #" + std::to_string(step++)));
   bool run = true;
   while (run)
   {
     auxiliar = auxiliar.makeBaseUsable();
-    steps.call<void>("push", tabloidToJs(auxiliar, "Auxiliar #" + std::to_string(step++)));
     auxiliar = auxiliar.runSimplexStep(run);
-    steps.call<void>("push", tabloidToJs(auxiliar, "Auxiliar #" + std::to_string(step++)));
   }
   if (auxiliar.v.isNegative())
   {
     Result result = {
-        ResultType::UNFEASIBLE,
+        ResultType::INFEASIBLE,
         auxiliar.certificate,
         0,
         Vector(0)};
-    res.set("answear", resultToJs(result));
+    return resultToJs(result);
   }
   else
   {
     tabloid = tabloid.continueUsingAuxiliar(auxiliar);
     run = true;
-    step = 0;
     while (run)
     {
       tabloid = tabloid.makeBaseUsable();
-      steps.call<void>("push", tabloidToJs(tabloid, "Primal #" + std::to_string(step++)));
       tabloid = tabloid.runSimplexStep(run);
-      steps.call<void>("push", tabloidToJs(tabloid, "Primal #" + std::to_string(step++)));
     }
-    res.set("answear", resultToJs(tabloid.getResult()));
+    return resultToJs(tabloid.getResult());
   }
-  res.set("steps", steps);
-  return res;
 }
 
 EMSCRIPTEN_BINDINGS(simplex)
