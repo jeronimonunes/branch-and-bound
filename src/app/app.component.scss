@@ -1,61 +1,35 @@
+:host {
+  display: grid;
+  width: 100vw;
+  height: 100vh;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr 1fr;
+  grid-template-areas:
+    "header        header"
+    "instructions  graph"
+    "editor        graph";
+}
+
+#instructions {
+  grid-area: instructions;
+  padding: 1em;
+}
+
+#editor {
+  grid-area: editor;
+}
+
+#graph {
+  grid-area: graph;
+}
+
 header {
+  grid-area: header;
   background-color: #3f51b5;
   display: flex;
   padding: 0em 1em;
 }
 
-header>h1 {
-    font-size: 1.5em;
-}
-
-.instructions {
-  margin: 1em;
-}
-
-.ace_editor {
-  width: calc(100% - 2em);
-  height: 15em;
-  margin: 1em;
-}
-
-.error {
-  width: calc(100% - 2em);
-  height: 32px;
-  font-size: 1em;
-  margin: 1em;
-  color: #f92672;
-}
-
-label {
-  margin-right: 0.5em;
-  font-weight: bold;
-}
-
-.steps {
-  display: grid;
-  height: auto;
-  width: auto;
-  padding: 1em;
-  overflow: auto;
-}
-
-.bdown {
-  border-bottom: 1px solid #f92672;
-}
-
-.bleft {
-  border-left: 1px solid #f92672;
-}
-
-h3 {
-  margin-top: 1em;
-  margin-bottom: 0;
-}
-
-.sh1 {
-  box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2);
-}
-
-.sh2 {
-  box-shadow: 0px 12px 17px 2px rgba(0, 0, 0, 0.14);
+header > h1 {
+  font-size: 1.5em;
 }

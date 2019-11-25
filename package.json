@@ -19,10 +19,12 @@
     "@angular/platform-browser": "~8.2.14",
     "@angular/platform-browser-dynamic": "~8.2.14",
     "@angular/router": "~8.2.14",
+    "@types/vis": "^4.21.19",
     "ace-builds": "^1.4.7",
     "linear-program-parser": "^1.0.7",
     "rxjs": "~6.4.0",
     "tslib": "^1.10.0",
+    "vis": "^4.21.0-EOL",
     "zone.js": "~0.9.1"
   },
   "devDependencies": {

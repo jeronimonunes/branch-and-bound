@@ -2,12 +2,9 @@
   <h1>Branch and Bound</h1>
 </header>
 
-<div class="instructions">
-  <p>This page has an implementation of the simplex algorithm.
-    It can show you all the intermediate steps used to get the result.</p>
-  <p>The algorithm is executed with infinite precision, using a fraction implementation that
-    has the numerator and denominator implemented with biginteger.
-  </p>
+<div id="instructions">
+  <p>This page aims to provide an easy to understand visualization of Branch and Bound algorithm</p>
+  <p>The linear programming will be calculated using the <a href="https://jeronimonunes.github.io/simplex-web/">Simplex</a> and then new restrictions are going to be added to make the result integer</p>
   <p>All the calculations are done within your browser page, so, if you close the app while the calculations are
     running, you will loose the progress.</p>
   <p>Down below you may write your Linear Program, use the example as a basis to understand the sintax.
@@ -15,4 +12,5 @@
   </p>
   <h2>Input:</h2>
 </div>
-<div class="mat-elevation-z12" #editor></div>
+<div id="editor" class="mat-elevation-z12" #editor></div>
+<div id="graph" #graphDiv></div>
