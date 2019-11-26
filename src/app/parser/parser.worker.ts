@@ -15,9 +15,9 @@ addEventListener('message', ({ data }) => {
     const fpi = val.toFPI();
     const { a, b, c, vars } = fpi.toMatrix();
     const matricialForm: MatricialForm = {
-      a: a.map(row => row.map(toNativeFraction)),
-      b: b.map(toNativeFraction),
-      c: c.map(toNativeFraction),
+      A: a.map(row => row.map(toNativeFraction)),
+      B: b.map(toNativeFraction),
+      C: c.map(toNativeFraction),
       vars
     };
     postMessage(matricialForm);

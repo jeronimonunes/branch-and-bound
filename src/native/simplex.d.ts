@@ -7,7 +7,18 @@ export interface Result {
   value: NativeFraction,
   solution: NativeFraction[],
   certificate: NativeFraction[],
-  type: 'ILIMITED' | 'LIMITED' | 'INFEASIBLE'
+  type: 'ILIMITED' | 'LIMITED' | 'INFEASIBLE',
+  state: Tabloid
+}
+
+export interface Tabloid {
+  certificate: NativeFraction[];
+  certificateMatrix: NativeFraction[][];
+  A: NativeFraction[][];
+  B: NativeFraction[];
+  C: NativeFraction[];
+  v: NativeFraction
+  base: { [key: number]: number };
 }
 
 export declare class SimplexNativeModule {

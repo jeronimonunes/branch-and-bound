@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Observable, fromEvent } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ParserOutput } from './parser-output';
 
 @Injectable({
@@ -8,14 +9,12 @@ import { ParserOutput } from './parser-output';
 export class ParserService {
 
   private worker: Worker;
-  private data = new BehaviorSubject<ParserOutput | null>(null);
-  public data$ = this.data.asObservable();
+  public data$: Observable<ParserOutput>;
 
   constructor() {
     this.worker = new Worker('./parser.worker', { type: 'module' });
-    this.worker.onmessage = ({ data }) => {
-      this.data.next(data);
-    };
+    this.data$ = fromEvent<MessageEvent>(this.worker, 'message')
+      .pipe(map(({ data }) => data));
   }
 
   next(value: string) {

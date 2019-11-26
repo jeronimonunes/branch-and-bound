@@ -24,12 +24,41 @@ Matrix jsFractionArrayArrayToMatrix(emscripten::val b)
   return m;
 }
 
-emscripten::val resultToJs(const Result &result)
+emscripten::val matrixToJs(const Matrix &matrix)
+{
+  emscripten::val matrixJs = emscripten::val::array();
+  for (const auto &line : matrix)
+  {
+    matrixJs.call<void>("push", emscripten::val::array(line));
+  }
+  return matrixJs;
+}
+
+emscripten::val tabloidToJs(const Tabloid &tabloid)
+{
+  emscripten::val tabloidJs = emscripten::val::object();
+  tabloidJs.set("certificate", emscripten::val::array(tabloid.certificate));
+  tabloidJs.set("certificateMatrix", matrixToJs(tabloid.certificateMatrix));
+  tabloidJs.set("A", matrixToJs(tabloid.A));
+  tabloidJs.set("B", emscripten::val::array(tabloid.B));
+  tabloidJs.set("C", emscripten::val::array(tabloid.C));
+  tabloidJs.set("v", emscripten::val(tabloid.v));
+  emscripten::val baseJs = emscripten::val::object();
+  for (const auto &[x, y] : tabloid.base)
+  {
+    baseJs.set(y, x);
+  }
+  tabloidJs.set("base", baseJs);
+  return tabloidJs;
+}
+
+emscripten::val resultToJs(const Result &result, const Tabloid &state)
 {
   emscripten::val answear = emscripten::val::object();
   answear.set("solution", emscripten::val::array(result.solution));
   answear.set("certificate", emscripten::val::array(result.certificate));
   answear.set("value", result.value);
+  answear.set("state", tabloidToJs(state));
   switch (result.type)
   {
   case ResultType::ILIMITED:
@@ -72,7 +101,7 @@ emscripten::val simplex(emscripten::val a, emscripten::val b, emscripten::val c)
         auxiliar.certificate,
         0,
         Vector(0)};
-    return resultToJs(result);
+    return resultToJs(result, tabloid);
   }
   else
   {
@@ -83,7 +112,7 @@ emscripten::val simplex(emscripten::val a, emscripten::val b, emscripten::val c)
       tabloid = tabloid.makeBaseUsable();
       tabloid = tabloid.runSimplexStep(run);
     }
-    return resultToJs(tabloid.getResult());
+    return resultToJs(tabloid.getResult(), tabloid);
   }
 }
 

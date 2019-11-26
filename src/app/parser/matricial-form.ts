@@ -1,8 +1,8 @@
 import { NativeFraction } from 'src/native/simplex';
 
 export interface MatricialForm {
-    a: NativeFraction[][];
-    b: NativeFraction[];
-    c: NativeFraction[];
+    A: NativeFraction[][];
+    B: NativeFraction[];
+    C: NativeFraction[];
     vars: string[];
 }
