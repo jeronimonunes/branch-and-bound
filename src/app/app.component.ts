@@ -3,12 +3,14 @@ import { edit, Ace } from 'ace-builds';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { getSpinnerImageOnTime } from './spinner';
-import { Network } from 'vis-network';
+import { Network, DataSet, Node, Edge } from 'vis-network';
 
 import './prog-lin.ace.mod';
 import 'ace-builds/src-noconflict/theme-monokai';
 
 import { branchAndBound } from './branch-and-bound';
+import { MatDialog } from '@angular/material/dialog';
+import { createSolutionElement } from './util';
 
 const THEME = 'ace/theme/monokai';
 const MODE = 'ace/mode/progLin';
@@ -24,6 +26,8 @@ export class AppComponent implements OnInit, OnDestroy {
   @ViewChild('graphDiv', { static: true }) graphDiv!: ElementRef<HTMLDivElement>;
 
   private network!: Network;
+  private nodes = new DataSet<Node>();
+  private edges = new DataSet<Edge>();
   private inputEditor!: Ace.Editor;
   private branchAndBoundSubscription!: Subscription;
 
@@ -31,7 +35,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   error$ = this.error.asObservable();
 
-  constructor() { }
+  constructor(private matDialog: MatDialog) { }
 
   ngOnInit() {
     const inputEditor = this.inputEditor = edit(this.editor.nativeElement);
@@ -89,25 +93,75 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.branchAndBoundSubscription = input
-      .pipe(switchMap(problem => branchAndBound(problem, this.network)))
-      .subscribe((problem) => {
-        if (problem === null) {
-          this.error.next('');
-          inputEditor.getSession().clearAnnotations();
-          // end
-        } else if (problem.optimal) {
-          console.log(problem.optimal.value);
-          this.error.next('');
-          inputEditor.getSession().clearAnnotations();
-        } else if (problem.annotations) {
-          inputEditor.getSession().setAnnotations(problem.annotations);
-          this.error.next(problem.annotations[0].text);
-          this.network.setData({});
-        } else if (problem.error) {
-          inputEditor.getSession().clearAnnotations();
-          this.error.next(problem.error);
-          this.network.setData({});
+    this.network.on('click', (properties) => {
+      const ids = properties.nodes;
+      console.log((this.network as any).body.nodes)
+    });
+
+    input.pipe(switchMap(problem => branchAndBound(problem)))
+      .subscribe(event => {
+        console.log(event.type)
+        switch (event.type) {
+          case 'parserError':
+            inputEditor.getSession().setAnnotations(event.annotations);
+            this.error.next('');
+            break;
+          case 'error':
+            inputEditor.getSession().clearAnnotations();
+            this.error.next(event.message);
+            break;
+          case 'start':
+            inputEditor.getSession().clearAnnotations();
+            this.error.next('');
+            this.nodes = new DataSet<Node>();
+            this.edges = new DataSet<Edge>();
+            this.network.setData({ nodes: this.nodes, edges: this.edges });
+            // focus on the first node
+            setTimeout(() => {
+              const vrect = ((this.network as any).body.container as HTMLDivElement).getBoundingClientRect();
+              this.network.focus('1', {
+                scale: 1,
+                locked: true,
+                offset: {
+                  x: 0,
+                  y: 83 - vrect.height / 2
+                }
+              });
+            });
+            break;
+          case 'subproblem':
+            this.nodes.add({
+              id: event.id,
+              label: 'Subproblem #' + event.id
+            });
+            if (event.parentId) {
+              this.edges.add({
+                from: event.parentId,
+                label: event.edgeLabel,
+                to: event.id
+              });
+            }
+            break;
+          case 'subresult':
+            if (event.res.type === 'ILIMITED' || event.res.type === 'INFEASIBLE') {
+              this.nodes.update({
+                id: event.id,
+                label: 'Subproblem #' + event.id + '\n' + event.res.type,
+                shape: 'circle'
+              });
+            } else {
+              const value = event.res.value.denominator === '1' ?
+                event.res.value.numerator :
+                (event.res.value.numerator + '/' + event.res.value.denominator);
+              this.nodes.update({
+                id: event.id,
+                label: 'Subproblem #' + event.id + '\n' +
+                  (event.fracIdx !== -1 ? 'fractional' : 'integer') +
+                  '\nvalue: ' + value,
+                shape: 'circle',
+                title: createSolutionElement(event.res.solution, event.res.vars) as any
+              });
+            }
         }
       });
   }

@@ -10,15 +10,14 @@ const toNativeFraction = (f: any) => ({
   denominator: '' + f.denominator,
 });
 
-export function evaluatePL(fpi: Fpi) {
+export function toMatricialForm(fpi: Fpi): MatricialForm {
   const { a, b, c, vars } = fpi.toMatrix();
-  const matricialForm: MatricialForm = {
+  return {
     A: a.map(row => row.map(toNativeFraction)),
     B: b.map(toNativeFraction),
     C: c.map(toNativeFraction),
     vars
   };
-  return evaluate(matricialForm);
 }
 
 export function evaluate(mat: MatricialForm) {

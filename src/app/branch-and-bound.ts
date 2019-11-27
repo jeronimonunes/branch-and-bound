@@ -1,72 +1,64 @@
-import { Edge, Node, Network, DataSet } from 'vis-network';
-import { interval, animationFrameScheduler, of, forkJoin, Observable, throwError } from 'rxjs';
-import { map, switchMap, mapTo, finalize } from 'rxjs/operators';
-import { getSpinnerImageOnTime } from './spinner';
-import { evaluate, evaluatePL } from './simplex';
+import { of, Observable, throwError, merge } from 'rxjs';
+import { map, switchMap, startWith } from 'rxjs/operators';
+import { evaluate, toMatricialForm } from './simplex';
 import { Result } from 'src/native/simplex';
-import { createSolutionElement, ZERO, ONE, cnf, genVar, NEG, never } from './util';
+import { ZERO, ONE, cnf, genVar, NEG, never } from './util';
 import { parse, SyntaxError, ProgLin } from 'linear-program-parser';
+import { MatricialForm } from './matricial-form';
 
 declare var BigInt: (v: string | number) => bigint;
 if (typeof (BigInt) === undefined) {
   BigInt = (v) => parseInt(v as string, 10) as any as bigint;
 }
 
-export function branchAndBound(problem: string, network: Network) {
+// tslint:disable-next-line: interface-over-type-literal
+export type BranchAndBoundEvent = {
+  type: 'start'
+} | {
+  type: 'parserError',
+  annotations: {
+    column: number,
+    row: number,
+    text: string,
+    type: 'error'
+  }[]
+} | {
+  type: 'error',
+  message: string
+} | {
+  type: 'subproblem',
+  id: string,
+  mat: MatricialForm
+  parentId: string | undefined
+  edgeLabel: string | undefined
+} | {
+  type: 'subresult',
+  id: string
+  res: Result,
+  fracIdx: number
+};
+
+export function branchAndBound(problem: string): Observable<BranchAndBoundEvent> {
   const optimal = {
     node: '',
     value: Number.NEGATIVE_INFINITY
   };
-  // creates a new graph
-  const nodes = new DataSet<Node>([{
-    id: '1',
-    label: 'Subproblem #1'
-  }]);
-  const edges = new DataSet<Edge>();
-  network.setData({ nodes, edges });
-
-  // focus on the first node
-  setTimeout(() => {
-    const vrect = ((network as any).body.container as HTMLDivElement).getBoundingClientRect();
-    network.focus('1', {
-      scale: 1,
-      locked: true,
-      offset: {
-        x: 0,
-        y: 83 - vrect.height / 2
-      }
-    });
-  });
-
-  // shows a loading animation if the PL is slow to compute
-  const animating = interval(0, animationFrameScheduler).pipe(
-    map(() => animationFrameScheduler.now()),
-    map(getSpinnerImageOnTime)
-  ).subscribe(svg => {
-    nodes.forEach(item => {
-      item.image = svg;
-      nodes.update(item);
-    });
-  });
-
 
   try {
     // solve the first linear relaxation
     const opl = parse(problem);
     const fpi = opl.toFPI();
     const ovars = fpi.objective.getVars();
-
-    return evaluatePL(fpi).pipe(
-      switchMap(res => whenResult(optimal, opl, ovars, res, nodes, edges, '1')),
-      finalize(() => animating.unsubscribe()),
-      mapTo({ optimal, annotations: undefined, error: undefined })
+    const mat = toMatricialForm(fpi);
+    return evaluate(mat).pipe(
+      switchMap(res => whenResult(optimal, opl, ovars, res, '1')),
+      startWith({ type: 'subproblem', id: '1', mat, parentId: undefined, edgeLabel: undefined } as BranchAndBoundEvent),
+      startWith({ type: 'start' } as BranchAndBoundEvent)
     );
   } catch (e) {
-    animating.unsubscribe();
     if (e instanceof SyntaxError) {
       return of({
-        error: undefined,
-        optimal: undefined,
+        type: 'parserError',
         annotations: [{
           column: e.location.start.column - 1,
           row: e.location.start.line - 1,
@@ -75,7 +67,10 @@ export function branchAndBound(problem: string, network: Network) {
         }]
       });
     } else {
-      return of({ error: e.message, annotations: undefined, optimal: undefined });
+      return of({
+        type: 'error',
+        message: e.message
+      });
     }
   }
 }
@@ -85,45 +80,37 @@ function whenResult(
   pl: ProgLin,
   ovars: Set<string>,
   res: Result,
-  nodes: DataSet<Node>,
-  edges: DataSet<Edge>,
   id: string
-): Observable<null> {
+): Observable<BranchAndBoundEvent> {
   // if (id.length > 10) {
   //   return of(null);
   // }
   switch (res.type) {
     case 'ILIMITED':
     case 'INFEASIBLE':
-      nodes.update({
+      return of({
+        type: 'subresult',
         id,
-        label: 'Subproblem #' + id + '\n' + res.type,
-        shape: 'circle'
+        res,
+        fracIdx: -1
       });
-      return of(null);
     case 'LIMITED':
       const fracIdx = res.solution.findIndex(({ denominator }, idx) => ovars.has(res.vars[idx]) && denominator !== '1');
-      const value = res.value.denominator === '1' ? res.value.numerator : (res.value.numerator + '/' + res.value.denominator);
       const nvalue = Number(res.value.numerator) / Number(res.value.denominator);
-      nodes.update({
-        id,
-        label: 'Subproblem #' + id + '\n' +
-          (fracIdx !== -1 ? 'fractional' : 'integer') +
-          '\nvalue: ' + value,
-        shape: 'circle',
-        title: createSolutionElement(res.solution, res.vars) as any
-      });
+      const evt: BranchAndBoundEvent = { type: 'subresult', id, res, fracIdx };
       if (fracIdx !== -1 && nvalue > optimal.value) {
-        return addSubproblems(optimal, pl, ovars, res, nodes, edges, id, fracIdx);
+        return addSubproblems(optimal, pl, ovars, res, id, fracIdx).pipe(
+          startWith(evt)
+        );
       } else if (nvalue > optimal.value) {
         optimal.node = id;
         optimal.value = nvalue;
       }
-      return of(null);
+      return of(evt);
     default:
       try {
         never(res.type);
-        return of(null);
+        return of({ type: 'error', message: 'Unexpected Error' });
       } catch (e) {
         return throwError(e);
       }
@@ -135,11 +122,9 @@ function addSubproblems(
   pl: ProgLin,
   pvars: Set<string>,
   pres: Result,
-  nodes: DataSet<Node>,
-  edges: DataSet<Edge>,
   parentId: string,
   fracIdx: number
-): Observable<null> {
+): Observable<BranchAndBoundEvent> {
   const numerator = BigInt(pres.solution[fracIdx].numerator);
   const denominator = BigInt(pres.solution[fracIdx].denominator);
   let integer = numerator / denominator;
@@ -148,15 +133,7 @@ function addSubproblems(
   }
   const left = (() => {
     const id = parentId + '.1';
-    nodes.add({
-      id,
-      label: 'Subproblem #' + id
-    });
-    edges.add({
-      from: parentId,
-      label: pres.vars[fracIdx] + ' <= ' + integer,
-      to: id
-    });
+    const edgeLabel = pres.vars[fracIdx] + ' <= ' + integer;
 
     // construct subproblem
     const A = [
@@ -175,22 +152,15 @@ function addSubproblems(
       ...pres.vars,
       genVar(pres.vars)
     ];
-    return evaluate({ A, B, C, vars }).pipe(
-      switchMap(res => whenResult(optimal, pl, pvars, res, nodes, edges, id))
+    const mat: MatricialForm = { A, B, C, vars };
+    return evaluate(mat).pipe(
+      switchMap(res => whenResult(optimal, pl, pvars, res, id)),
+      startWith({ type: 'subproblem', id, mat, parentId, edgeLabel } as BranchAndBoundEvent)
     );
   })();
   const right = (() => {
     const id = parentId + '.2';
-    nodes.add({
-      id,
-      label: 'Subproblem #' + id,
-      title: 'Subproblem #' + id
-    });
-    edges.add({
-      from: parentId,
-      label: pres.vars[fracIdx] + ' >= ' + (integer + BigInt(1)),
-      to: id
-    });
+    const edgeLabel = pres.vars[fracIdx] + ' >= ' + (integer + BigInt(1));
 
     // construct subproblem
     const A = [
@@ -209,12 +179,11 @@ function addSubproblems(
       ...pres.vars,
       genVar(pres.vars)
     ];
-    return evaluate({ A, B, C, vars }).pipe(
-      switchMap(res => whenResult(optimal, pl, pvars, res, nodes, edges, id))
+    const mat: MatricialForm = { A, B, C, vars };
+    return evaluate(mat).pipe(
+      switchMap(res => whenResult(optimal, pl, pvars, res, id)),
+      startWith({ type: 'subproblem', id, mat, parentId, edgeLabel } as BranchAndBoundEvent)
     );
   })();
-  return forkJoin([
-    left,
-    right
-  ]).pipe(mapTo(null));
+  return merge(left, right);
 }
