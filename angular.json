@@ -126,8 +126,15 @@
               "devServerTarget": "branch-and-bound:serve:production"
             }
           }
+        },
+        "deploy": {
+          "builder": "angular-cli-ghpages:deploy",
+          "options": {
+            "baseHref": "https://jeronimonunes.github.io/branch-and-bound/"
+          }
         }
       }
-    }},
+    }
+  },
   "defaultProject": "branch-and-bound"
 }
