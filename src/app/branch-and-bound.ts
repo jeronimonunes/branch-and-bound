@@ -51,7 +51,7 @@ export function branchAndBound(problem: string): Observable<BranchAndBoundEvent>
     const ovars = fpi.objective.getVars();
     const mat = toMatricialForm(fpi);
     return evaluate(mat).pipe(
-      switchMap(res => whenResult(optimal, opl, ovars, res, '1')),
+      switchMap(res => whenResult(optimal, mat, ovars, res, '1')),
       startWith({ type: 'subproblem', id: '1', mat, parentId: undefined, edgeLabel: undefined } as BranchAndBoundEvent),
       startWith({ type: 'start' } as BranchAndBoundEvent)
     );
@@ -77,7 +77,7 @@ export function branchAndBound(problem: string): Observable<BranchAndBoundEvent>
 
 function whenResult(
   optimal: { value: number, node: string },
-  pl: ProgLin,
+  original: MatricialForm,
   ovars: Set<string>,
   res: Result,
   id: string
@@ -99,7 +99,7 @@ function whenResult(
       const nvalue = Number(res.value.numerator) / Number(res.value.denominator);
       const evt: BranchAndBoundEvent = { type: 'subresult', id, res, fracIdx };
       if (fracIdx !== -1 && nvalue > optimal.value) {
-        return addSubproblems(optimal, pl, ovars, res, id, fracIdx).pipe(
+        return addSubproblems(optimal, original, ovars, res, id, fracIdx).pipe(
           startWith(evt)
         );
       } else if (nvalue > optimal.value) {
@@ -119,7 +119,7 @@ function whenResult(
 
 function addSubproblems(
   optimal: { value: number, node: string },
-  pl: ProgLin,
+  original: MatricialForm,
   pvars: Set<string>,
   pres: Result,
   parentId: string,
@@ -144,17 +144,17 @@ function addSubproblems(
       ...pres.state.B,
       cnf('' + integer, '1')
     ];
-    const C = [
-      ...pres.state.C,
-      ZERO
-    ];
+    const C = original.C.slice();
+    while (C.length <= pres.state.C.length) {
+      C.push(ZERO);
+    }
     const vars = [
       ...pres.vars,
       genVar(pres.vars)
     ];
     const mat: MatricialForm = { A, B, C, vars };
     return evaluate(mat).pipe(
-      switchMap(res => whenResult(optimal, pl, pvars, res, id)),
+      switchMap(res => whenResult(optimal, original, pvars, res, id)),
       startWith({ type: 'subproblem', id, mat, parentId, edgeLabel } as BranchAndBoundEvent)
     );
   })();
@@ -171,17 +171,17 @@ function addSubproblems(
       ...pres.state.B,
       cnf('' + (integer + BigInt(1)), '1')
     ];
-    const C = [
-      ...pres.state.C,
-      ZERO
-    ];
+    const C = original.C.slice();
+    while (C.length <= pres.state.C.length) {
+      C.push(ZERO);
+    }
     const vars = [
       ...pres.vars,
       genVar(pres.vars)
     ];
     const mat: MatricialForm = { A, B, C, vars };
     return evaluate(mat).pipe(
-      switchMap(res => whenResult(optimal, pl, pvars, res, id)),
+      switchMap(res => whenResult(optimal, original, pvars, res, id)),
       startWith({ type: 'subproblem', id, mat, parentId, edgeLabel } as BranchAndBoundEvent)
     );
   })();
