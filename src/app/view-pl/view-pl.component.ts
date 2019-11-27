@@ -1,6 +1,6 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatricialForm } from '../matricial-form';
+import { MatricialForm } from '../branch-and-bound/matricial-form';
 import { Result } from 'src/native/simplex';
 import { Observable, of } from 'rxjs';
 import { shareReplay } from 'rxjs/operators';

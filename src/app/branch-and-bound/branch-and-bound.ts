@@ -1,42 +1,16 @@
 import { of, Observable, throwError, merge } from 'rxjs';
-import { map, switchMap, startWith } from 'rxjs/operators';
+import { switchMap, startWith } from 'rxjs/operators';
 import { evaluate, toMatricialForm } from './simplex';
 import { Result } from 'src/native/simplex';
 import { ZERO, ONE, cnf, genVar, NEG, never } from './util';
-import { parse, SyntaxError, ProgLin } from 'linear-program-parser';
+import { parse, SyntaxError } from 'linear-program-parser';
 import { MatricialForm } from './matricial-form';
+import { BranchAndBoundEvent } from './branch-and-bound-event';
 
 declare var BigInt: (v: string | number) => bigint;
 if (typeof (BigInt) === undefined) {
   BigInt = (v) => parseInt(v as string, 10) as any as bigint;
 }
-
-// tslint:disable-next-line: interface-over-type-literal
-export type BranchAndBoundEvent = {
-  type: 'start'
-} | {
-  type: 'parserError',
-  annotations: {
-    column: number,
-    row: number,
-    text: string,
-    type: 'error'
-  }[]
-} | {
-  type: 'error',
-  message: string
-} | {
-  type: 'subproblem',
-  id: string,
-  mat: MatricialForm
-  parentId: string | undefined
-  edgeLabel: string | undefined
-} | {
-  type: 'subresult',
-  id: string
-  res: Result,
-  fracIdx: number
-};
 
 export function branchAndBound(problem: string): Observable<BranchAndBoundEvent> {
   const optimal = {

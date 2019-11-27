@@ -3,7 +3,7 @@
   width: 100vw;
   height: 100vh;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto 1fr 1fr;
+  grid-template-rows: auto auto 1fr auto;
   grid-template-areas:
     "header        header"
     "instructions  graph"
@@ -34,6 +34,14 @@
 
 #graph {
   grid-area: graph;
+  display: grid;
+  grid-template-areas:
+    "graph graph"
+    "button button";
+  grid-template-rows: 1fr auto;
+  margin-bottom: 1em;
+  row-gap: 1em;
+  column-gap: 1em;
 }
 
 header {

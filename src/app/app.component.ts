@@ -2,18 +2,17 @@ import { Component, OnInit, ElementRef, ViewChild, OnDestroy } from '@angular/co
 import { edit, Ace } from 'ace-builds';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { getSpinnerImageOnTime } from './spinner';
 import { Network, DataSet, Node, Edge } from 'vis-network';
 
 import './prog-lin.ace.mod';
 import 'ace-builds/src-noconflict/theme-monokai';
 
-import { branchAndBound } from './branch-and-bound';
+import { branchAndBound } from './branch-and-bound/branch-and-bound';
 import { MatDialog } from '@angular/material/dialog';
-import { createSolutionElement } from './util';
+import { createSolutionElement } from './branch-and-bound/util';
 import { ViewPlComponent } from './view-pl/view-pl.component';
 import { Result } from 'src/native/simplex';
-import { MatricialForm } from './matricial-form';
+import { MatricialForm } from './branch-and-bound/matricial-form';
 
 const THEME = 'ace/theme/monokai';
 const MODE = 'ace/mode/progLin';
@@ -36,10 +35,11 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private error = new BehaviorSubject<string>('');
 
-  error$ = this.error.asObservable();
-
   private results: Map<string, Result> = new Map();
   private subproblems: Map<string, MatricialForm> = new Map();
+
+  error$ = this.error.asObservable();
+  optimalId: string | undefined;
 
   constructor(private matDialog: MatDialog) { }
 
@@ -78,7 +78,7 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       },
       nodes: {
-        image: getSpinnerImageOnTime(0),
+        image: 'assets/spinner.svg',
         shape: 'circularImage',
         color: {
           background: 'white'
@@ -184,6 +184,16 @@ export class AppComponent implements OnInit, OnDestroy {
     this.network.destroy();
     this.inputEditor.destroy();
     this.branchAndBoundSubscription.unsubscribe();
+  }
+
+  fit() {
+    this.network.fit();
+  }
+
+  focusOptimal() {
+    if (this.optimalId) {
+      this.network.focus(this.optimalId);
+    }
   }
 
 }

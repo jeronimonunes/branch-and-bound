@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { default as Module, NativeFraction } from '../native/simplex';
+import { default as Module, NativeFraction } from '../../native/simplex';
 import { MatricialForm } from './matricial-form';
 
 

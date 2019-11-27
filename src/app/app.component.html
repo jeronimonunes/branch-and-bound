@@ -4,7 +4,9 @@
 
 <div id="instructions">
   <p>This page aims to provide an easy to understand visualization of Branch and Bound algorithm</p>
-  <p>The linear programming will be calculated using the <a href="https://jeronimonunes.github.io/simplex-web/">Simplex</a> and then new restrictions are going to be added to make the result integer</p>
+  <p>The linear programming will be calculated using the <a
+      href="https://jeronimonunes.github.io/simplex-web/">Simplex</a> and then new restrictions are going to be added to
+    make the result integer</p>
   <p>All the calculations are done within your browser page, so, if you close the app while the calculations are
     running, you will loose the progress.</p>
   <p>Down below you may write your Linear Program, use the example as a basis to understand the sintax.
@@ -14,4 +16,8 @@
 </div>
 <div id="editor" class="mat-elevation-z12" #editor></div>
 <div *ngIf="error$ | async as error" class="error">{{error}}</div>
-<div id="graph" #graphDiv></div>
+<div id="graph">
+    <div #graphDiv style="grid-area: graph;"></div>
+    <button mat-button mat-raised-button color="primary" (click)="fit()">Fit</button>
+    <button mat-button mat-raised-button color="primary" (click)="focusOptimal()" [disabled]="!optimalId">Focus optimal</button>
+</div>
