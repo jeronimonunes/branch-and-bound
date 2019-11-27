@@ -7,7 +7,6 @@ import { Network } from 'vis-network';
 
 import './prog-lin.ace.mod';
 import 'ace-builds/src-noconflict/theme-monokai';
-import { ParserService } from './parser/parser.service';
 
 import { branchAndBound } from './branch-and-bound';
 
@@ -32,19 +31,16 @@ export class AppComponent implements OnInit, OnDestroy {
 
   error$ = this.error.asObservable();
 
-  constructor(
-    private parserService: ParserService
-  ) {
-
-  }
+  constructor() { }
 
   ngOnInit() {
     const inputEditor = this.inputEditor = edit(this.editor.nativeElement);
     inputEditor.setTheme(THEME);
     inputEditor.getSession().setMode(MODE);
 
-    inputEditor.addEventListener('change', (value: any) => {
-      this.parserService.next(inputEditor.getValue());
+    const input = new BehaviorSubject<string>('');
+    inputEditor.addEventListener('change', () => {
+      input.next(inputEditor.getValue());
     });
 
     inputEditor.setValue(`max (12a + 2b)
@@ -56,13 +52,12 @@ export class AppComponent implements OnInit, OnDestroy {
         b >= 0
 `);
     inputEditor.clearSelection();
-
     this.network = new Network(this.graphDiv.nativeElement, {}, {
       physics: true,
       edges: {
         smooth: {
           enabled: true,
-          type: 'cubicBezier',
+          type: 'continuous',
           forceDirection: 'horizontal',
           roundness: .6
         },
@@ -94,13 +89,17 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.branchAndBoundSubscription = this.parserService.data$
+    this.branchAndBoundSubscription = input
       .pipe(switchMap(problem => branchAndBound(problem, this.network)))
-      .subscribe(problem => {
+      .subscribe((problem) => {
         if (problem === null) {
           this.error.next('');
           inputEditor.getSession().clearAnnotations();
           // end
+        } else if (problem.optimal) {
+          console.log(problem.optimal.value);
+          this.error.next('');
+          inputEditor.getSession().clearAnnotations();
         } else if (problem.annotations) {
           inputEditor.getSession().setAnnotations(problem.annotations);
           this.error.next(problem.annotations[0].text);

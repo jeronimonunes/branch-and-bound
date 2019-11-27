@@ -1,8 +1,25 @@
-import { MatricialForm } from './parser/matricial-form';
+import { MatricialForm } from './matricial-form';
 
 import { Observable } from 'rxjs';
 
 import { Result } from 'src/native/simplex';
+import { Fpi } from 'linear-program-parser';
+
+const toNativeFraction = (f: any) => ({
+  numerator: '' + f.numerator,
+  denominator: '' + f.denominator,
+});
+
+export function evaluatePL(fpi: Fpi) {
+  const { a, b, c, vars } = fpi.toMatrix();
+  const matricialForm: MatricialForm = {
+    A: a.map(row => row.map(toNativeFraction)),
+    B: b.map(toNativeFraction),
+    C: c.map(toNativeFraction),
+    vars
+  };
+  return evaluate(matricialForm);
+}
 
 export function evaluate(mat: MatricialForm) {
   return new Observable<Result>(observer => {

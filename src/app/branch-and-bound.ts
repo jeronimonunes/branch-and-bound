@@ -1,24 +1,44 @@
-import { ParserOutput } from './parser/parser-output';
 import { Edge, Node, Network, DataSet } from 'vis-network';
 import { interval, animationFrameScheduler, of, forkJoin, Observable, throwError } from 'rxjs';
 import { map, switchMap, mapTo, finalize } from 'rxjs/operators';
 import { getSpinnerImageOnTime } from './spinner';
-import { evaluate } from './simplex';
+import { evaluate, evaluatePL } from './simplex';
 import { Result } from 'src/native/simplex';
 import { createSolutionElement, ZERO, ONE, cnf, genVar, NEG, never } from './util';
+import { parse, SyntaxError, ProgLin } from 'linear-program-parser';
 
 declare var BigInt: (v: string | number) => bigint;
 if (typeof (BigInt) === undefined) {
   BigInt = (v) => parseInt(v as string, 10) as any as bigint;
 }
 
-export function branchAndBound(problem: ParserOutput, network: Network) {
+export function branchAndBound(problem: string, network: Network) {
+  const optimal = {
+    node: '',
+    value: Number.NEGATIVE_INFINITY
+  };
+  // creates a new graph
   const nodes = new DataSet<Node>([{
     id: '1',
     label: 'Subproblem #1'
   }]);
   const edges = new DataSet<Edge>();
   network.setData({ nodes, edges });
+
+  // focus on the first node
+  setTimeout(() => {
+    const vrect = ((network as any).body.container as HTMLDivElement).getBoundingClientRect();
+    network.focus('1', {
+      scale: 1,
+      locked: true,
+      offset: {
+        x: 0,
+        y: 83 - vrect.height / 2
+      }
+    });
+  });
+
+  // shows a loading animation if the PL is slow to compute
   const animating = interval(0, animationFrameScheduler).pipe(
     map(() => animationFrameScheduler.now()),
     map(getSpinnerImageOnTime)
@@ -28,18 +48,50 @@ export function branchAndBound(problem: ParserOutput, network: Network) {
       nodes.update(item);
     });
   });
-  if (problem.annotations || problem.error) {
-    animating.unsubscribe();
-    return of(problem);
-  } else {
-    return evaluate(problem).pipe(
-      switchMap(res => whenResult(problem, res, nodes, edges, '1')),
-      finalize(() => animating.unsubscribe())
+
+
+  try {
+    // solve the first linear relaxation
+    const opl = parse(problem);
+    const fpi = opl.toFPI();
+    const ovars = fpi.objective.getVars();
+
+    return evaluatePL(fpi).pipe(
+      switchMap(res => whenResult(optimal, opl, ovars, res, nodes, edges, '1')),
+      finalize(() => animating.unsubscribe()),
+      mapTo({ optimal, annotations: undefined, error: undefined })
     );
+  } catch (e) {
+    animating.unsubscribe();
+    if (e instanceof SyntaxError) {
+      return of({
+        error: undefined,
+        optimal,
+        annotations: [{
+          column: e.location.start.column - 1,
+          row: e.location.start.line - 1,
+          text: e.message,
+          type: 'error'
+        }]
+      });
+    } else {
+      return of({ error: e.message, annotations: undefined, optimal });
+    }
   }
 }
 
-function whenResult(problem: ParserOutput, res: Result, nodes: DataSet<Node>, edges: DataSet<Edge>, id: string): Observable<null> {
+function whenResult(
+  optimal: { value: number, node: string },
+  pl: ProgLin,
+  ovars: Set<string>,
+  res: Result,
+  nodes: DataSet<Node>,
+  edges: DataSet<Edge>,
+  id: string
+): Observable<null> {
+  // if (id.length > 10) {
+  //   return of(null);
+  // }
   switch (res.type) {
     case 'ILIMITED':
     case 'INFEASIBLE':
@@ -50,18 +102,22 @@ function whenResult(problem: ParserOutput, res: Result, nodes: DataSet<Node>, ed
       });
       return of(null);
     case 'LIMITED':
-      const fracIdx = res.solution.findIndex(({ denominator }) => denominator !== '1');
+      const fracIdx = res.solution.findIndex(({ denominator }, idx) => ovars.has(res.vars[idx]) && denominator !== '1');
       const value = res.value.denominator === '1' ? res.value.numerator : (res.value.numerator + '/' + res.value.denominator);
+      const nvalue = Number(res.value.numerator) / Number(res.value.denominator);
       nodes.update({
         id,
         label: 'Subproblem #' + id + '\n' +
           (fracIdx !== -1 ? 'fractional' : 'integer') +
           '\nvalue: ' + value,
         shape: 'circle',
-        title: createSolutionElement(res.solution) as any
+        title: createSolutionElement(res.solution, res.vars) as any
       });
-      if (fracIdx !== -1) {
-        return addSubproblems(problem, res, nodes, edges, id, fracIdx);
+      if (fracIdx !== -1 && nvalue > optimal.value) {
+        return addSubproblems(optimal, pl, ovars, res, nodes, edges, id, fracIdx);
+      } else if (nvalue > optimal.value) {
+        optimal.node = id;
+        optimal.value = nvalue;
       }
       return of(null);
     default:
@@ -74,8 +130,16 @@ function whenResult(problem: ParserOutput, res: Result, nodes: DataSet<Node>, ed
   }
 }
 
-// tslint:disable-next-line: max-line-length
-function addSubproblems(problem: ParserOutput, pres: Result, nodes: DataSet<Node>, edges: DataSet<Edge>, parentId: string, fracIdx: number): Observable<null> {
+function addSubproblems(
+  optimal: { value: number, node: string },
+  pl: ProgLin,
+  pvars: Set<string>,
+  pres: Result,
+  nodes: DataSet<Node>,
+  edges: DataSet<Edge>,
+  parentId: string,
+  fracIdx: number
+): Observable<null> {
   const numerator = BigInt(pres.solution[fracIdx].numerator);
   const denominator = BigInt(pres.solution[fracIdx].denominator);
   let integer = numerator / denominator;
@@ -86,12 +150,11 @@ function addSubproblems(problem: ParserOutput, pres: Result, nodes: DataSet<Node
     const id = parentId + '.1';
     nodes.add({
       id,
-      label: 'Subproblem #' + id,
-      title: 'Subproblem #' + id
+      label: 'Subproblem #' + id
     });
     edges.add({
       from: parentId,
-      label: problem.vars[fracIdx] + ' <= ' + integer,
+      label: pres.vars[fracIdx] + ' <= ' + integer,
       to: id
     });
 
@@ -109,11 +172,11 @@ function addSubproblems(problem: ParserOutput, pres: Result, nodes: DataSet<Node
       ZERO
     ];
     const vars = [
-      ...problem.vars,
-      genVar(problem)
+      ...pres.vars,
+      genVar(pres.vars)
     ];
     return evaluate({ A, B, C, vars }).pipe(
-      switchMap(res => whenResult(problem, res, nodes, edges, id))
+      switchMap(res => whenResult(optimal, pl, pvars, res, nodes, edges, id))
     );
   })();
   const right = (() => {
@@ -125,7 +188,7 @@ function addSubproblems(problem: ParserOutput, pres: Result, nodes: DataSet<Node
     });
     edges.add({
       from: parentId,
-      label: problem.vars[fracIdx] + ' >= ' + integer,
+      label: pres.vars[fracIdx] + ' >= ' + (integer + BigInt(1)),
       to: id
     });
 
@@ -143,11 +206,11 @@ function addSubproblems(problem: ParserOutput, pres: Result, nodes: DataSet<Node
       ZERO
     ];
     const vars = [
-      ...problem.vars,
-      genVar(problem)
+      ...pres.vars,
+      genVar(pres.vars)
     ];
     return evaluate({ A, B, C, vars }).pipe(
-      switchMap(res => whenResult(problem, res, nodes, edges, id))
+      switchMap(res => whenResult(optimal, pl, pvars, res, nodes, edges, id))
     );
   })();
   return forkJoin([

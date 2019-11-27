@@ -6,6 +6,7 @@ export interface NativeFraction {
 export interface Result {
   value: NativeFraction,
   solution: NativeFraction[],
+  vars: string[];
   certificate: NativeFraction[],
   type: 'ILIMITED' | 'LIMITED' | 'INFEASIBLE',
   state: Tabloid

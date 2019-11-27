@@ -1,18 +1,20 @@
 import { NativeFraction } from 'src/native/simplex';
-import { ParserOptions } from 'pegjs';
-import { ParserOutput } from './parser/parser-output';
 
 export function never(n: never): never {
   console.error(n);
   throw new Error('The thread got into a path that it wasn\'t supposed to, check the console');
 }
 
-export function createSolutionElement(solution: NativeFraction[]) {
+export function createSolutionElement(solution: NativeFraction[], vars: string[]) {
   const parent = document.createElement('div');
   parent.style.display = 'grid';
   parent.style.gridTemplateColumns = '';
-  parent.style.gridColumnGap = '1em';
-  for (const { numerator, denominator } of solution) {
+  for (let i = 0; i < vars.length; i++) {
+    const { numerator, denominator } = solution[i];
+    const label = document.createElement('div');
+    label.style.marginLeft = '1em';
+    label.style.marginRight = '.5em';
+    label.innerText = vars[i] + ':';
     const val = document.createElement('div');
     if (denominator === '1') {
       val.innerText = numerator;
@@ -25,17 +27,18 @@ export function createSolutionElement(solution: NativeFraction[]) {
       val.appendChild(num);
       val.appendChild(den);
     }
+    parent.append(label);
     parent.appendChild(val);
-    parent.style.gridTemplateColumns += ' auto';
+    parent.style.gridTemplateColumns += ' auto auto';
   }
   return parent;
 }
 
 let last = 0;
-export function genVar(problem: ParserOutput) {
+export function genVar(vars: string[]) {
 
   let v = 'gen_' + (last++);
-  while (problem.vars.indexOf(v) !== -1) {
+  while (vars.indexOf(v) !== -1) {
     v = 'gen_' + (last++);
   }
   return v;
