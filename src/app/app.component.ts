@@ -43,14 +43,14 @@ export class AppComponent implements OnInit, OnDestroy {
       input.next(inputEditor.getValue());
     });
 
-    inputEditor.setValue(`max (12a + 2b)
+    inputEditor.setValue(`max (4a - b)
     st:
-        b <= 4
-        3a - 2b <= 3
-        10a + 2b <= 23
-        a >= 0
-        b >= 0
-`);
+    7a - 2b <= 14
+    b <= 3
+    3a - 2b <= 3
+    a >= 0
+    b >= 0
+    `);
     inputEditor.clearSelection();
     this.network = new Network(this.graphDiv.nativeElement, {}, {
       physics: true,

@@ -66,7 +66,7 @@ export function branchAndBound(problem: string, network: Network) {
     if (e instanceof SyntaxError) {
       return of({
         error: undefined,
-        optimal,
+        optimal: undefined,
         annotations: [{
           column: e.location.start.column - 1,
           row: e.location.start.line - 1,
@@ -75,7 +75,7 @@ export function branchAndBound(problem: string, network: Network) {
         }]
       });
     } else {
-      return of({ error: e.message, annotations: undefined, optimal });
+      return of({ error: e.message, annotations: undefined, optimal: undefined });
     }
   }
 }

@@ -36,11 +36,11 @@ export function createSolutionElement(solution: NativeFraction[], vars: string[]
 
 let last = 0;
 export function genVar(vars: string[]) {
+  let v: string;
 
-  let v = 'gen_' + (last++);
-  while (vars.indexOf(v) !== -1) {
-    v = 'gen_' + (last++);
-  }
+  do {
+    v = 'g_' + (last++);
+  } while (vars.indexOf(v) !== -1);
   return v;
 
 }
