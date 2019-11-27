@@ -1,0 +1,11 @@
+<ng-container *ngIf="value?.numerator == '0'; else valutemp">
+    0
+</ng-container>
+<ng-template #valutemp>
+    <ng-container *ngIf="value?.denominator == '1'; else realfrac">
+        {{value?.numerator}}
+    </ng-container>
+</ng-template>
+<ng-template #realfrac>
+    {{value?.numerator}}/{{value?.denominator}}
+</ng-template>

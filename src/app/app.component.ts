@@ -11,6 +11,9 @@ import 'ace-builds/src-noconflict/theme-monokai';
 import { branchAndBound } from './branch-and-bound';
 import { MatDialog } from '@angular/material/dialog';
 import { createSolutionElement } from './util';
+import { ViewPlComponent } from './view-pl/view-pl.component';
+import { Result } from 'src/native/simplex';
+import { MatricialForm } from './matricial-form';
 
 const THEME = 'ace/theme/monokai';
 const MODE = 'ace/mode/progLin';
@@ -34,6 +37,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private error = new BehaviorSubject<string>('');
 
   error$ = this.error.asObservable();
+
+  private results: Map<string, Result> = new Map();
+  private subproblems: Map<string, MatricialForm> = new Map();
 
   constructor(private matDialog: MatDialog) { }
 
@@ -94,13 +100,17 @@ export class AppComponent implements OnInit, OnDestroy {
     });
 
     this.network.on('click', (properties) => {
-      const ids = properties.nodes;
-      console.log((this.network as any).body.nodes)
+      const ids = properties.nodes as string[];
+      if (ids.length === 1) {
+        const id = ids[0];
+        const mat = this.subproblems.get(id);
+        const res = this.results.get(id);
+        this.matDialog.open(ViewPlComponent, { data: { mat, res } });
+      }
     });
 
     input.pipe(switchMap(problem => branchAndBound(problem)))
       .subscribe(event => {
-        console.log(event.type)
         switch (event.type) {
           case 'parserError':
             inputEditor.getSession().setAnnotations(event.annotations);
@@ -111,6 +121,8 @@ export class AppComponent implements OnInit, OnDestroy {
             this.error.next(event.message);
             break;
           case 'start':
+            this.results = new Map();
+            this.subproblems = new Map();
             inputEditor.getSession().clearAnnotations();
             this.error.next('');
             this.nodes = new DataSet<Node>();
@@ -130,6 +142,7 @@ export class AppComponent implements OnInit, OnDestroy {
             });
             break;
           case 'subproblem':
+            this.subproblems.set(event.id, event.mat);
             this.nodes.add({
               id: event.id,
               label: 'Subproblem #' + event.id
@@ -143,6 +156,7 @@ export class AppComponent implements OnInit, OnDestroy {
             }
             break;
           case 'subresult':
+            this.results.set(event.id, event.res);
             if (event.res.type === 'ILIMITED' || event.res.type === 'INFEASIBLE') {
               this.nodes.update({
                 id: event.id,

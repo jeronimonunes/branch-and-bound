@@ -1,0 +1,39 @@
+.A,
+.X,
+.B {
+  display: inline-grid;
+  border: 1px solid white;
+  border-top: none;
+  border-bottom: none;
+  border-radius: 10px;
+  column-gap: 0.5em;
+  margin: 0.5em;
+  padding: 0.5em;
+  text-align: center;
+}
+
+.C {
+  display: inline-grid;
+  column-gap: 0.5em;
+}
+
+.restrictions {
+  display: flex;
+}
+
+.restrictions > * {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.tabloid {
+  display: grid;
+}
+
+.bb {
+  border-bottom: 1px solid white;
+}
+
+.br {
+  border-right: 1px solid white;
+}

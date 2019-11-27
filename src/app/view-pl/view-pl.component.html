@@ -1,0 +1,54 @@
+<mat-tab-group>
+  <mat-tab label="Subproblem">
+    max (<span class="C" [ngStyle]="columns$ | async">
+      <ng-container *ngFor="let v of mat.C">
+        <app-fraction [value]="v"></app-fraction>
+      </ng-container>
+    </span>) X
+    <div class="restrictions">
+      <span>st:</span>
+      <div class="A" [ngStyle]="columns$ | async">
+        <ng-container *ngFor="let line of mat.A">
+          <ng-container *ngFor="let value of line">
+            <app-fraction [value]="value"></app-fraction>
+          </ng-container>
+        </ng-container>
+      </div>
+      <div class="X">
+        <span *ngFor="let value of mat.vars">
+          {{value}}
+        </span>
+      </div>
+      <span>=</span>
+      <div class="B">
+        <ng-container *ngFor="let value of mat.B">
+          <app-fraction [value]="value"></app-fraction>
+        </ng-container>
+      </div>
+    </div>
+  </mat-tab>
+  <mat-tab label="Results">
+    <div class="tabloid" [ngStyle]="tabloidStyle$ | async">
+      <ng-container *ngFor="let c of res.state.certificate; last as last">
+        <app-fraction class="bb" [class.br]="last" [value]="c"></app-fraction>
+      </ng-container>
+      <ng-container *ngFor="let v of res.state.C; last as last">
+        <app-fraction class="bb" [class.br]="last" [value]="v"></app-fraction>
+      </ng-container>
+      <ng-container>
+        <app-fraction class="bb" [value]="res.state.v"></app-fraction>
+      </ng-container>
+      <ng-container *ngFor="let line of res.state.certificateMatrix; index as i">
+        <ng-container *ngFor="let v of line; last as last">
+          <app-fraction [class.br]="last" [value]="v"></app-fraction>
+        </ng-container>
+        <ng-container *ngFor="let v of res.state.A[i]; last as last">
+          <app-fraction [class.br]="last" [value]="v"></app-fraction>
+        </ng-container>
+        <ng-container>
+          <app-fraction [value]="res.state.B[i]"></app-fraction>
+        </ng-container>
+      </ng-container>
+    </div>
+  </mat-tab>
+</mat-tab-group>

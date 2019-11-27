@@ -1,3 +1,21 @@
+@import '~@angular/material/theming';
+
+$typography: mat-typography-config($font-family: "Roboto, \"Helvetica Neue\", sans-serif");
+
+@include mat-core($typography);
+
+$primary: mat-palette($mat-indigo);
+$accent: mat-palette($mat-pink, A200, A100, A400);
+
+$warn: mat-palette($mat-red);
+
+$theme: mat-dark-theme($primary, $accent, $warn);
+
+@include mat-core-theme($theme);
+@include mat-button-theme($theme);
+@include mat-dialog-theme($theme);
+@include mat-tabs-theme($theme);
+
 @import '~vis-network/styles/vis-network.css';
 
 html,
