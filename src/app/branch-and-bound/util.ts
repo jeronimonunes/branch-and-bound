@@ -1,8 +1,9 @@
 import { NativeFraction } from 'src/native/simplex';
+import { throwError } from 'rxjs';
 
-export function never(n: never): never {
+export function never(n: never) {
   console.error(n);
-  throw new Error('The thread got into a path that it wasn\'t supposed to, check the console');
+  return throwError('The code reached an unexpected path');
 }
 
 export function createSolutionElement(solution: NativeFraction[], vars: string[]) {

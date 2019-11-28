@@ -13,17 +13,16 @@ if (typeof (BigInt) === undefined) {
 }
 
 export function branchAndBound(problem: string): Observable<BranchAndBoundEvent> {
-  const optimal = {
-    node: '',
-    value: Number.NEGATIVE_INFINITY
-  };
-
   try {
     // solve the first linear relaxation
     const opl = parse(problem);
     const fpi = opl.toFPI();
-    const ovars = fpi.objective.getVars();
+    const ovars = opl.objective.getVars();
     const mat = toMatricialForm(fpi);
+    const optimal = {
+      node: '',
+      value: Number.NEGATIVE_INFINITY
+    };
     return evaluate(mat).pipe(
       switchMap(res => whenResult(optimal, mat, ovars, res, '1')),
       startWith({ type: 'subproblem', id: '1', mat, parentId: undefined, edgeLabel: undefined } as BranchAndBoundEvent),
@@ -82,12 +81,7 @@ function whenResult(
       }
       return of(evt);
     default:
-      try {
-        never(res.type);
-        return of({ type: 'error', message: 'Unexpected Error' });
-      } catch (e) {
-        return throwError(e);
-      }
+      return never(res.type);
   }
 }
 
