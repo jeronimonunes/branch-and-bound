@@ -12,9 +12,12 @@
   <p>Down below you may write your Linear Program, use the example as a basis to understand the sintax.
     Simple mathematical expressions like *, +, -, /, are going to be interpreted before running simplex.
   </p>
-  <h2>Input:</h2>
+  <div id="fade-out"></div>
 </div>
-<div id="editor" class="mat-elevation-z12" #editor></div>
+<div id="editor" class="mat-elevation-z12">
+  <h2>Input:</h2>
+  <div #editor></div>
+</div>
 <div *ngIf="error$ | async as error" class="error">{{error}}</div>
 <div id="graph">
     <div #graphDiv style="grid-area: graph;"></div>

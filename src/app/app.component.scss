@@ -11,19 +11,6 @@
     "error         graph";
 }
 
-@media(max-width: 700px) {
-  :host {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 20vh 1fr auto 2fr;
-    row-gap: .5em;
-    grid-template-areas: "header"
-                        "instructions"
-                        "editor"
-                        "error"
-                        "graph";
-  }
-}
-
 .error {
   grid-area: error;
   margin: 1em;
@@ -37,13 +24,22 @@
 }
 
 #instructions {
+  position: relative;
   grid-area: instructions;
   overflow: auto;
   padding: 1em;
+  padding-bottom: 0;
 }
 
 #editor {
   grid-area: editor;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+#editor>h2 {
+  margin-left: .5em;
+  margin-bottom: 0;
 }
 
 #graph {
@@ -53,9 +49,12 @@
     "graph graph"
     "button button";
   grid-template-rows: 1fr auto;
-  margin-bottom: 1em;
-  row-gap: 1em;
   column-gap: 1em;
+}
+
+button {
+  margin: 1em;
+  margin-top: calc(-1em - 36px);
 }
 
 header {
@@ -67,4 +66,26 @@ header {
 
 header > h1 {
   margin: 0;
+}
+
+@media (max-width: 700px) {
+  #fade-out {
+    background-image: linear-gradient(to bottom, transparent, black);
+    left: 0;
+    right: 0;
+    height: 10vh;
+    position: sticky;
+    margin: -1em;
+    bottom: -2px;
+  }
+  :host {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 20vh 1fr auto 2fr;
+    grid-template-areas:
+      "header"
+      "instructions"
+      "editor"
+      "error"
+      "graph";
+  }
 }
