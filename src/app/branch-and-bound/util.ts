@@ -11,8 +11,12 @@ declare const BigInt: (v: number | string) => bigint;
 
 const bigOne = BigInt(1);
 
+export function toFraction(frac: NativeFraction) {
+  return new Fraction(BigInt(frac.numerator), BigInt(frac.denominator));
+}
+
 export function isInteger(frac: NativeFraction) {
-  return new Fraction(BigInt(frac.numerator), BigInt(frac.denominator)).denominator === bigOne;
+  return toFraction(frac).denominator === bigOne;
 }
 
 export function createSolutionElement(solution: NativeFraction[], vars: string[]) {

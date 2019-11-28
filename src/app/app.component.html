@@ -19,5 +19,10 @@
 <div id="graph">
     <div #graphDiv style="grid-area: graph;"></div>
     <button mat-button mat-raised-button color="primary" (click)="fit()">Fit</button>
-    <button mat-button mat-raised-button color="primary" (click)="focusOptimal()" [disabled]="!optimalId">Focus optimal</button>
+    <button mat-button mat-raised-button color="primary" (click)="focusOptimal()" [disabled]="!optimalId">
+      Focus optimal
+      <ng-container *ngIf="optimal">
+        ({{optimal}})
+      </ng-container>
+    </button>
 </div>

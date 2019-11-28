@@ -2,10 +2,11 @@ import { of, Observable, throwError, merge } from 'rxjs';
 import { switchMap, startWith } from 'rxjs/operators';
 import { evaluate, toMatricialForm } from './simplex';
 import { Result } from 'src/native/simplex';
-import { ZERO, ONE, cnf, genVar, NEG, never, isInteger } from './util';
-import { parse, SyntaxError } from 'linear-program-parser';
+import { ZERO, ONE, cnf, genVar, NEG, never, isInteger, toFraction } from './util';
+import { parse, SyntaxError, ProgLinType } from 'linear-program-parser';
 import { MatricialForm } from './matricial-form';
 import { BranchAndBoundEvent } from './branch-and-bound-event';
+import { NEG as fNEG } from 'linear-program-parser';
 
 declare var BigInt: (v: string | number) => bigint;
 if (typeof (BigInt) === undefined) {
@@ -24,7 +25,7 @@ export function branchAndBound(problem: string): Observable<BranchAndBoundEvent>
       value: Number.NEGATIVE_INFINITY
     };
     return evaluate(mat).pipe(
-      switchMap(res => whenResult(optimal, mat, ovars, res, '1')),
+      switchMap(res => whenResult(optimal, opl.type, mat, ovars, res, '1')),
       startWith({ type: 'subproblem', id: '1', mat, parentId: undefined, edgeLabel: undefined } as BranchAndBoundEvent),
       startWith({ type: 'start' } as BranchAndBoundEvent)
     );
@@ -50,6 +51,7 @@ export function branchAndBound(problem: string): Observable<BranchAndBoundEvent>
 
 function whenResult(
   optimal: { value: number, node: string },
+  type: ProgLinType,
   original: MatricialForm,
   ovars: Set<string>,
   res: Result,
@@ -65,21 +67,35 @@ function whenResult(
         type: 'subresult',
         id,
         res,
-        fracIdx: -1
+        fracIdx: -1,
+        value: type === 'max' ? toFraction(res.value) : toFraction(res.value).multiply(fNEG)
       });
     case 'LIMITED':
       const fracIdx = res.solution.findIndex((frac, idx) => ovars.has(res.vars[idx]) && !isInteger(frac));
       const nvalue = Number(res.value.numerator) / Number(res.value.denominator);
-      const evt: BranchAndBoundEvent = { type: 'subresult', id, res, fracIdx };
+      const evt: BranchAndBoundEvent = {
+        type: 'subresult',
+        id,
+        res,
+        fracIdx,
+        value: type === 'max' ? toFraction(res.value) : toFraction(res.value).multiply(fNEG)
+      };
       if (fracIdx !== -1 && nvalue > optimal.value) {
-        return addSubproblems(optimal, original, ovars, res, id, fracIdx).pipe(
+        return addSubproblems(optimal, type, original, ovars, res, id, fracIdx).pipe(
           startWith(evt)
         );
       } else if (nvalue > optimal.value) {
         optimal.node = id;
         optimal.value = nvalue;
+        const optEvt: BranchAndBoundEvent = {
+          type: 'optimal',
+          value: evt.value,
+          id: evt.id
+        };
+        return of(optEvt, evt);
+      } else {
+        return of(evt);
       }
-      return of(evt);
     default:
       return never(res.type);
   }
@@ -87,6 +103,7 @@ function whenResult(
 
 function addSubproblems(
   optimal: { value: number, node: string },
+  type: ProgLinType,
   original: MatricialForm,
   pvars: Set<string>,
   pres: Result,
@@ -122,7 +139,7 @@ function addSubproblems(
     ];
     const mat: MatricialForm = { A, B, C, vars };
     return evaluate(mat).pipe(
-      switchMap(res => whenResult(optimal, original, pvars, res, id)),
+      switchMap(res => whenResult(optimal, type, original, pvars, res, id)),
       startWith({ type: 'subproblem', id, mat, parentId, edgeLabel } as BranchAndBoundEvent)
     );
   })();
@@ -149,7 +166,7 @@ function addSubproblems(
     ];
     const mat: MatricialForm = { A, B, C, vars };
     return evaluate(mat).pipe(
-      switchMap(res => whenResult(optimal, original, pvars, res, id)),
+      switchMap(res => whenResult(optimal, type, original, pvars, res, id)),
       startWith({ type: 'subproblem', id, mat, parentId, edgeLabel } as BranchAndBoundEvent)
     );
   })();

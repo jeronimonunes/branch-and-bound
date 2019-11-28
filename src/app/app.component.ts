@@ -9,10 +9,11 @@ import 'ace-builds/src-noconflict/theme-monokai';
 
 import { branchAndBound } from './branch-and-bound/branch-and-bound';
 import { MatDialog } from '@angular/material/dialog';
-import { createSolutionElement } from './branch-and-bound/util';
+import { createSolutionElement, never } from './branch-and-bound/util';
 import { ViewPlComponent } from './view-pl/view-pl.component';
 import { Result } from 'src/native/simplex';
 import { MatricialForm } from './branch-and-bound/matricial-form';
+import { Fraction } from 'linear-program-parser';
 
 const THEME = 'ace/theme/monokai';
 const MODE = 'ace/mode/progLin';
@@ -39,7 +40,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private subproblems: Map<string, MatricialForm> = new Map();
 
   error$ = this.error.asObservable();
-  optimalId: string | undefined;
+  optimalId: string | null = null;
+  optimal: Fraction | null = null;
 
   constructor(private matDialog: MatDialog) { }
 
@@ -121,6 +123,8 @@ export class AppComponent implements OnInit, OnDestroy {
             this.error.next(event.message);
             break;
           case 'start':
+            this.optimal = null;
+            this.optimalId = null;
             this.results = new Map();
             this.subproblems = new Map();
             inputEditor.getSession().clearAnnotations();
@@ -164,18 +168,22 @@ export class AppComponent implements OnInit, OnDestroy {
                 shape: 'circle'
               });
             } else {
-              const value = event.res.value.denominator === '1' ?
-                event.res.value.numerator :
-                (event.res.value.numerator + '/' + event.res.value.denominator);
               this.nodes.update({
                 id: event.id,
                 label: 'Subproblem #' + event.id + '\n' +
                   (event.fracIdx !== -1 ? 'fractional' : 'integer') +
-                  '\nvalue: ' + value,
+                  '\nvalue: ' + event.value,
                 shape: 'circle',
                 title: createSolutionElement(event.res.solution, event.res.vars) as any
               });
             }
+            break;
+          case 'optimal':
+            this.optimal = event.value;
+            this.optimalId = event.id;
+            break;
+          default:
+            never(event);
         }
       });
   }

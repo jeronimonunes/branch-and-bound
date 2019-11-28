@@ -1,6 +1,7 @@
 import { MatricialForm } from './matricial-form';
 
 import { Result } from 'src/native/simplex';
+import { Fraction } from 'linear-program-parser';
 
 interface StartEvent {
   type: 'start';
@@ -34,10 +35,18 @@ interface SubResultEvent {
   id: string;
   res: Result;
   fracIdx: number;
+  value: Fraction;
+}
+
+interface OptimalResultEvent {
+  type: 'optimal';
+  value: Fraction;
+  id: string;
 }
 
 export type BranchAndBoundEvent = StartEvent
   | ParserErrorEvent
   | ErrorEvent
   | SubProblemEvent
-  | SubResultEvent;
+  | SubResultEvent
+  | OptimalResultEvent;
