@@ -1,9 +1,18 @@
 import { NativeFraction } from 'src/native/simplex';
 import { throwError } from 'rxjs';
+import { Fraction } from 'linear-program-parser';
 
 export function never(n: never) {
   console.error(n);
   return throwError('The code reached an unexpected path');
+}
+
+declare const BigInt: (v: number | string) => bigint;
+
+const bigOne = BigInt(1);
+
+export function isInteger(frac: NativeFraction) {
+  return new Fraction(BigInt(frac.numerator), BigInt(frac.denominator)).denominator === bigOne;
 }
 
 export function createSolutionElement(solution: NativeFraction[], vars: string[]) {

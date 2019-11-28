@@ -2,7 +2,7 @@ import { of, Observable, throwError, merge } from 'rxjs';
 import { switchMap, startWith } from 'rxjs/operators';
 import { evaluate, toMatricialForm } from './simplex';
 import { Result } from 'src/native/simplex';
-import { ZERO, ONE, cnf, genVar, NEG, never } from './util';
+import { ZERO, ONE, cnf, genVar, NEG, never, isInteger } from './util';
 import { parse, SyntaxError } from 'linear-program-parser';
 import { MatricialForm } from './matricial-form';
 import { BranchAndBoundEvent } from './branch-and-bound-event';
@@ -68,7 +68,7 @@ function whenResult(
         fracIdx: -1
       });
     case 'LIMITED':
-      const fracIdx = res.solution.findIndex(({ denominator }, idx) => ovars.has(res.vars[idx]) && denominator !== '1');
+      const fracIdx = res.solution.findIndex((frac, idx) => ovars.has(res.vars[idx]) && !isInteger(frac));
       const nvalue = Number(res.value.numerator) / Number(res.value.denominator);
       const evt: BranchAndBoundEvent = { type: 'subresult', id, res, fracIdx };
       if (fracIdx !== -1 && nvalue > optimal.value) {
