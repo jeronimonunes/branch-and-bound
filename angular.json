@@ -22,7 +22,7 @@
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.app.json",
-            "aot": false,
+            "aot": true,
             "assets": [
               "src/favicon.ico",
               "src/assets",
@@ -47,7 +47,6 @@
               "sourceMap": false,
               "extractCss": true,
               "namedChunks": false,
-              "aot": true,
               "extractLicenses": true,
               "vendorChunk": false,
               "buildOptimizer": true,
@@ -136,5 +135,8 @@
       }
     }
   },
-  "defaultProject": "branch-and-bound"
+  "defaultProject": "branch-and-bound",
+  "cli": {
+    "analytics": "62919fdf-85cd-42ba-85ba-20d893757369"
+  }
 }
