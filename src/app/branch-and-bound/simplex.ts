@@ -22,7 +22,7 @@ export function toMatricialForm(fpi: Fpi): MatricialForm {
 
 export function evaluate(mat: MatricialForm) {
   return new Observable<Result>(observer => {
-    const worker = new Worker('./simplex.worker', { type: 'module' });
+    const worker = new Worker(new URL('./simplex.worker', import.meta.url), { type: 'module' });
     worker.onmessage = ({ data }) => {
       observer.next(data);
       observer.complete();
