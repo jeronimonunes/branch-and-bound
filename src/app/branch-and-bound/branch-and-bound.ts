@@ -29,7 +29,7 @@ export function branchAndBound(problem: string): Observable<BranchAndBoundEvent>
       startWith({ type: 'subproblem', id: '1', mat, parentId: undefined, edgeLabel: undefined } as BranchAndBoundEvent),
       startWith({ type: 'start' } as BranchAndBoundEvent)
     );
-  } catch (e) {
+  } catch (e: any) {
     if (e instanceof SyntaxError) {
       return of({
         type: 'parserError',

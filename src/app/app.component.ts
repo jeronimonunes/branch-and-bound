@@ -65,7 +65,6 @@ export class AppComponent implements OnInit, OnDestroy {
     `);
     inputEditor.clearSelection();
     this.network = new Network(this.graphDiv.nativeElement, {}, {
-      physics: true,
       edges: {
         smooth: {
           enabled: true,
@@ -132,18 +131,6 @@ export class AppComponent implements OnInit, OnDestroy {
             this.nodes = new DataSet<Node>();
             this.edges = new DataSet<Edge>();
             this.network.setData({ nodes: this.nodes, edges: this.edges });
-            // focus on the first node
-            setTimeout(() => {
-              const vrect = ((this.network as any).body.container as HTMLDivElement).getBoundingClientRect();
-              this.network.focus('1', {
-                scale: 1,
-                locked: true,
-                offset: {
-                  x: 0,
-                  y: 83 - vrect.height / 2
-                }
-              });
-            });
             break;
           case 'subproblem':
             this.subproblems.set(event.id, event.mat);
@@ -195,12 +182,12 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   fit() {
-    this.network.fit();
+    this.network.fit({ animation: { duration: 200, easingFunction: 'easeInCubic' } });
   }
 
   focusOptimal() {
     if (this.optimalId) {
-      this.network.focus(this.optimalId);
+      this.network.focus(this.optimalId, { animation: { duration: 200, easingFunction: 'easeInCubic' } });
     }
   }
 

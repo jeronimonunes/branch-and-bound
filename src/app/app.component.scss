@@ -37,24 +37,24 @@
   grid-template-rows: auto 1fr;
 }
 
-#editor>h2 {
-  margin-left: .5em;
+#editor > h2 {
+  margin-left: 0.5em;
   margin-bottom: 0;
 }
 
 #graph {
+  position: relative;
   grid-area: graph;
-  display: grid;
-  grid-template-areas:
-    "graph graph"
-    "button button";
-  grid-template-rows: 1fr auto;
-  column-gap: 1em;
-}
-
-button {
-  margin: 1em;
-  margin-top: calc(-1em - 36px);
+  > div:first-child {
+    height: calc(100% - 70px);
+  }
+  > div:nth-child(2) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1em;
+    height: 70px;
+  }
 }
 
 header {
